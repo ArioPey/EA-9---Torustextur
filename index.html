@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torustextur</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>Torustextur</h1>
+  <p>Ein Torus, einmal mit einer selbst erzeugten Bildtextur (türkis-blauer Marmor) und einmal mit einer prozeduralen Textur (Donut mit Glasur und Streuseln) belegt. Beide lassen sich jederzeit umschalten.</p>
+</header>
+
+<main>
+  <section>
+    <div class="canvas-wrap">
+      <canvas id="gl" tabindex="0" aria-label="Texturierter Torus"></canvas>
+      <div class="hud" aria-live="polite"><span id="hud-mode">Textur: Bild (Marmor)</span></div>
+      <p id="error" class="error" hidden></p>
+    </div>
+    <div class="switch" role="group" aria-label="Textur wählen">
+      <span class="label">Textur:</span>
+      <button id="btn-image" type="button" aria-pressed="true">Bildtextur: Marmor (1)</button>
+      <button id="btn-proc" type="button" aria-pressed="false">Prozedural: Donut (2)</button>
+      <button id="btn-spin" type="button" aria-pressed="true">Drehung: an (Leertaste)</button>
+      <button id="btn-reset" type="button">Kamera zurücksetzen (R)</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bedienung</h2>
+    <table>
+      <thead><tr><th>Eingabe</th><th>Wirkung</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd> oder <kbd>A</kbd> <kbd>D</kbd></td><td>Kamera um den Torus nach links bzw. rechts schwenken.</td></tr>
+        <tr><td><kbd>↑</kbd> <kbd>↓</kbd> oder <kbd>W</kbd> <kbd>S</kbd></td><td>Kamera nach oben bzw. unten schwenken.</td></tr>
+        <tr><td><kbd>E</kbd> / <kbd>+</kbd> und <kbd>Q</kbd> / <kbd>-</kbd></td><td>Heranzoomen und Wegzoomen (zusätzlich).</td></tr>
+        <tr><td><kbd>1</kbd> / <kbd>2</kbd></td><td>Bildtextur bzw. prozedurale Textur anzeigen. Entspricht den beiden Buttons unter der Szene.</td></tr>
+        <tr><td><kbd>Leertaste</kbd></td><td>Drehung des Torus an- oder ausschalten.</td></tr>
+        <tr><td><kbd>R</kbd></td><td>Kamera zurücksetzen.</td></tr>
+        <tr><td>Maus ziehen / Mausrad</td><td>Kamera drehen bzw. zoomen (zusätzlich).</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Bearbeitet</h2>
+    <ul>
+      <li><strong>Grundaufgabe:</strong> Torus mit Bildtextur. Zur Geometrie (Positionen, Normalen) wurden Texturkoordinaten hinzugefügt.</li>
+      <li><strong>Erweiterung:</strong> Prozedurale Textur im Fragment-Shader, per Button umschaltbar und wieder zurückschaltbar.</li>
+    </ul>
+
+    <h2>Texturkoordinaten</h2>
+    <p>Der Torus wird über zwei Winkel parametrisiert: <code>φ</code> läuft um den Ring, <code>θ</code> um den Schlauch. Die Texturkoordinaten sind daraus direkt abgeleitet:</p>
+    <p><code>u = φ / 2π</code> und <code>v = θ / 2π</code>, jeweils im Bereich 0 bis 1.</p>
+    <p>Die erste und die letzte Vertexreihe liegen geometrisch an derselben Stelle, bekommen aber die Koordinaten 0 und 1. Dadurch wird die Textur einmal vollständig um den Ring und einmal um den Schlauch gelegt, ohne Lücke an der Naht. Die Bildtextur ist nahtlos kachelbar erzeugt, damit auch die Übergänge zwischen den Kanten unsichtbar bleiben.</p>
+
+    <h2>Bildtextur</h2>
+    <figure>
+      <img src="textures/marmor_tuerkis.jpg" alt="Türkis-dunkelblaue Marmortextur mit hellen Adern" width="2048" height="1024">
+      <figcaption>Verwendete Bildtextur (2048 × 1024 px), selbst erzeugt.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Herkunft:</strong> Das Bild habe ich nicht aus dem Internet übernommen, sondern mit einem eigenen Python-Skript berechnet (<code>tools/generate_marble.py</code>, numpy und Pillow). Es basiert auf keinem fremden Bildmaterial.</li>
+      <li><strong>Verfahren:</strong> Aus kachelbarem 1/f-Rauschen (Filterung im Frequenzraum) entstehen großflächige Farbwolken von Dunkelblau über Blau nach Türkis. Hauptadern und feinere Nebenadern sind Sinuslinien, die mit dem Rauschen verzerrt werden. Mit ganzzahligen Wellenzahlen ist das Ergebnis in beiden Richtungen nahtlos.</li>
+      <li><strong>Laden in WebGL:</strong> Per <code>Image</code>-Objekt, dann <code>texImage2D</code>, Mipmaps und Wiederholung (<code>REPEAT</code>), da die Größe eine Zweierpotenz ist. Bis das Bild geladen ist, wird ein türkiser Platzhalter angezeigt. Fehler beim Laden erscheinen in der Szene und in der Konsole.</li>
+    </ul>
+
+    <h2>Prozedurale Textur (Erweiterung)</h2>
+    <p>Die Textur entsteht komplett im Fragment-Shader aus den Koordinaten <code>(u, v)</code>, ohne Bilddatei. Zum Motiv Donut passt der Torus von selbst.</p>
+    <ul>
+      <li><strong>Glasur:</strong> Die Höhe <code>sin(2π·v)</code> wird mit einer welligen, periodischen Kante verglichen. Oberhalb der Kante liegt rosa Glasur, an einigen Stellen mit herunterlaufenden Tropfen. Am Rand ist sie etwas heller.</li>
+      <li><strong>Teig:</strong> Goldbraun, zur Unterseite hin dunkler, mit einer feinen Körnung aus periodischem Value-Noise.</li>
+      <li><strong>Streusel:</strong> Ein Raster aus 48 × 20 Zellen. Jede Zelle erhält per Hash-Funktion eine Wahrscheinlichkeit, einen Versatz, einen Drehwinkel und eine von sechs Farben. Gezeichnet wird je eine Kapsel. Da die Zellzahl ganzzahlig ist, passt das Raster nahtlos um den Torus.</li>
+      <li><strong>Material:</strong> Die Glasur glänzt (enger Glanzpunkt), der Teig ist matt.</li>
+    </ul>
+
+    <h2>Beleuchtung</h2>
+    <p>Beide Texturen werden mit einer Blinn-Phong-Beleuchtung pro Fragment verknüpft (ambient, diffus, spekular). Das Licht ist fest im Weltkoordinatensystem, die Kamera bewegt sich unabhängig davon.</p>
+
+    <h2>Test und QA</h2>
+    <ul>
+      <li>Getestet werden sollte: Kamera mit Pfeiltasten und WASD in alle Richtungen, mehrfaches Umschalten der Textur, Drehung an und aus, Fenstergröße ändern.</li>
+      <li>Shader- und Ladefehler werden in der Browser-Konsole ausgegeben und über der Szene angezeigt.</li>
+      <li>Beim lokalen Testen die Seite über einen Webserver öffnen, z. B. mit <code>python3 -m http.server</code>, da Browser Bilder als WebGL-Textur von <code>file://</code> blockieren (CORS).</li>
+    </ul>
+
+    <h2>Quellen</h2>
+    <ul>
+      <li>Lerneinheiten 1–15, insbesondere TXR (Texturen).</li>
+      <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL">MDN: Using textures in WebGL</a> (Laden von Bildtexturen, Regeln für Nicht-Zweierpotenz-Größen).</li>
+      <li><a href="https://de.wikipedia.org/wiki/Torus">Wikipedia: Torus</a> (Parametrisierung).</li>
+      <li><a href="https://de.wikipedia.org/wiki/Perlin-Noise">Wikipedia: Perlin-Noise</a> und <a href="https://de.wikipedia.org/wiki/Prozedurale_Textur">Prozedurale Textur</a> (Idee von Rauschfunktionen und prozeduralen Texturen).</li>
+    </ul>
+    <p class="note">Der Quellcode (<code>main.js</code>, <code>tools/generate_marble.py</code>) und die Bildtextur wurden für diese Aufgabe selbst erstellt. Fremdes Bild- oder Codematerial wird nicht verwendet.</p>
+  </section>
+</main>
+
+<footer>Torustextur · WebGL</footer>
+<script src="main.js"></script>
+</body>
+</html>
