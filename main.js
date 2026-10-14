@@ -2,7 +2,7 @@
 /* Torustextur – Bildtextur und prozedurale Textur auf einem Torus (reines WebGL). */
 
 (function () {
-  const TEXTURE_URL = "textures/marmor_tuerkis.jpg";
+  const TEXTURE_URL = "marmor_tuerkis.jpg";
 
   const canvas = document.getElementById("gl");
   const errBox = document.getElementById("error");
