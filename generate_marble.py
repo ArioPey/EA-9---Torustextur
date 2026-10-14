@@ -61,5 +61,7 @@ img = lerp(img, np.broadcast_to(pale, (H, W, 3)), vein2 * 0.35)
 img = img * (0.95 + 0.05 * fine[..., None])
 img = np.clip(img, 0, 1) ** (1 / 1.05)
 
-Image.fromarray((img * 255).astype(np.uint8)).save("textures/marmor_tuerkis.jpg", quality=90, optimize=True)
+Image.fromarray((img * 255).astype(np.uint8)).save("
+
+                                                   marmor_tuerkis.jpg", quality=90, optimize=True)
 print("fertig")
